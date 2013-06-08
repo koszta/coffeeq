@@ -2,7 +2,7 @@
 
 CoffeeQ is a simple queueing library for node.js implemented on top of redis and inspired by resque.  It was inspired by Coffee-Resque and implemented to satisfy the needs of a specific development project for a fast backend queueing library.  The use of redis build in pub/sub functionality makes the processing of new queue items very fast and eliminates the need to poll redis for changes.
 
-CoffeeQ uses redis built in pub/sub functionality and lists to provide a reliable and fast queueing mechanism.  A client can enqueue and job which will add the job to a queue and publish a change message to the queue's pub/sub channel, any workers set to work on that queue will try to pickup the job from the queue - only one worker is able to take any given item from a queue.  
+CoffeeQ uses redis built in pub/sub functionality and lists to provide a reliable and fast queueing mechanism.  A client can enqueue and job which will add the job to a queue and publish a change message to the queue's pub/sub channel, any workers set to work on that queue will try to pickup the job from the queue - only one worker is able to take any given item from a queue.
 
 Workers listen to the pub/sub channel for a given queue and whenever a new job is queued will attempt to dequeue the job to be processed, if successful they will perform the action defined by the job.
 
@@ -19,12 +19,12 @@ It's only dependency is redis which will be installed by npm along with the modu
 CoffeeQ allows you to define workers dedicated to processing tasks for a given queue, a job can be any arbitrary coffeescript/javascript function.  You can use the node client to enqueue items on a queue for processing by passing in the name of the job and the parameters for the job in an array.
 
 ### Defining tasks to be performed
-  
-You can define the tasks to be performed as functions, in the simplest case you can 
+
+You can define the tasks to be performed as functions, in the simplest case you can
 
 CoffeeScript:
 
-    jobs =       
+    jobs =
       succeed: (callback) ->
         console.log "callback succeed"
         callback()
@@ -34,7 +34,7 @@ CoffeeScript:
       multiply: (a, b, callback) ->
         console.log "callback multiply #{a} * #{b}"
         callback(a * b)
-        
+
 JS:
 
     var jobs = {
@@ -48,8 +48,8 @@ JS:
       },
       multiply: function(a,b,callback) {
         console.log('callback multiply' + a + ' * ' + 'b');
-        callback(a*b);      
-      }      
+        callback(a*b);
+      }
     }
 
 ### Adding items to a Queue
@@ -76,7 +76,7 @@ CoffeeScript:
 
       Worker = require('coffeeq').Worker
 
-      jobs =              
+      jobs =
         succeed: (callback) ->
           console.log "callback succeed"
           callback()
@@ -114,12 +114,12 @@ JS:
       },
       multiply: function(a,b,callback) {
         console.log('callback multiply' + a + ' * ' + 'b');
-        callback(a*b);      
+        callback(a*b);
       }
     }
-    
+
     var worker = new Worker("test_queue", jobs);
-    
+
     worker.on('message', function(worker, queue){
       console.log("message fired");
     });
@@ -134,12 +134,12 @@ JS:
     });
 
     worker.start();
-    
+
 ## Ruby Client
 
 See [https://github.com/pcrawfor/coffeeq-rubyclient](https://github.com/pcrawfor/coffeeq-rubyclient) for a ruby client implementation to use with the CoffeeQ queueing system.
-    
----    
+
+---
 
 # Credits
 

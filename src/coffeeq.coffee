@@ -9,7 +9,7 @@ Worker = require './coffeeq_worker'
 ###
 
 class CoffeeQ
-  constructor: (options) ->    
+  constructor: (options) ->
     options = {} unless options
     @port = options.port || 6379
     @host = options.host || 'localhost'
@@ -21,23 +21,23 @@ class CoffeeQ
 
   ###
   Public: Queues a job in a given queue to be run.
-  
+
    queue - String queue name.
    func  - String name of the function to run.
    args  - Optional Array of arguments to pass.
-  
-   Returns nothing.      
-  ### 
-  enqueue: (queue, func, args) ->    
-    val = JSON.stringify class: func, args: args    
+
+   Returns nothing.
+  ###
+  enqueue: (queue, func, args) ->
+    val = JSON.stringify class: func, args: args
     key = @activeKeyForQueue(queue)
-    @queueClient.rpush key, val, (err, val) =>      
-      @pubsubClient.publish(key, "queued", -> 
+    @queueClient.rpush key, val, (err, val) =>
+      @pubsubClient.publish(key, "queued", ->
         console.log "published on #{queue}"
-      ) if !err 
+      ) if !err
 
 # end class
-  
+
 # export classes
 CoffeeQ.Worker = Worker
 CoffeeQ.version = "0.0.9"

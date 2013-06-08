@@ -29,24 +29,24 @@ TODO:
     See current state of all queues
     See current throughput of queues
 
-### 
+###
 
 redis = require 'redis'
 helper = require './coffeeq_helpers'
 Ctrl =  require '../vendor/ctrl/ctrl.js'
 
-class CoffeeQOverlord    
+class CoffeeQOverlord
   constructor: (options={}) ->
     @port = options.port || 6379
     @host = options.host || 'localhost'
-    @queueClient = redis.createClient @port, @host            
-  
+    @queueClient = redis.createClient @port, @host
+
   # The include call must come after the constructor
   helper.include(this)
-    
+
   ###
     Load the current set of active workers and return the result
-  ###   
+  ###
   activeWorkers: (callback) ->
     workers = null
     queues = []
@@ -57,49 +57,49 @@ class CoffeeQOverlord
     startTimes = {}
     runningFor = {}
     throughputVals = {}
-    
+
     results = {}
-    
+
     Ctrl.run(
       (ctrl) =>
         @queueClient.keys ":running:*", ctrl.collect()
-      
+
       (ctrl) =>
-        workers = ctrl.result[1]        
+        workers = ctrl.result[1]
         for worker in workers
           do (worker) =>
             @queueClient.get worker, ctrl.collect("#{worker}_last_run")
-          q = worker.replace(":running:", "")          
+          q = worker.replace(":running:", "")
           @queueClient.get @performedKeyForQueue(q), ctrl.collect("#{worker}_performed_count")
-          @queueClient.get @runningKeyForQueue(q), ctrl.collect("#{worker}_running")          
-          @queueClient.llen @activeKeyForQueue(q), ctrl.collect("#{worker}_count")          
-          @queueClient.llen @errorKeyForQueue(q), ctrl.collect("#{worker}_error_count")                      
-      
+          @queueClient.get @runningKeyForQueue(q), ctrl.collect("#{worker}_running")
+          @queueClient.llen @activeKeyForQueue(q), ctrl.collect("#{worker}_count")
+          @queueClient.llen @errorKeyForQueue(q), ctrl.collect("#{worker}_error_count")
+
       (ctrl) =>
         for worker in workers
           do (worker) =>
-            queueName = worker.replace(":running:", ":queue:")            
+            queueName = worker.replace(":running:", ":queue:")
             queues.push queueName
-            starts[queueName] = ctrl.named_results["#{worker}_last_run"][1]   
+            starts[queueName] = ctrl.named_results["#{worker}_last_run"][1]
             counts[queueName] = ctrl.named_results["#{worker}_count"][1]
-            performedCounts[queueName] = ctrl.named_results["#{worker}_performed_count"][1]            
-            performedCounts[queueName] = 0 if(performedCounts[queueName] == undefined || performedCounts[queueName] == null)            
+            performedCounts[queueName] = ctrl.named_results["#{worker}_performed_count"][1]
+            performedCounts[queueName] = 0 if(performedCounts[queueName] == undefined || performedCounts[queueName] == null)
             startTimes[queueName] = ctrl.named_results["#{worker}_running"][1]
-            
+
             numMinutesRunning = ((Date.parse(Date()) - Date.parse(starts[queueName]))/1000)/60
             numMinutesRunning = Math.round(numMinutesRunning*10)/10
             runningFor[queueName] = numMinutesRunning
-            
+
             # calc throughput
             # performedCount / numSecondsRunning
             throughput = performedCounts[queueName]/numMinutesRunning
             throughputVals[queueName] = Math.round(throughput*10)/10
-            
+
             errCount = ctrl.named_results["#{worker}_error_count"][1]
             errors[queueName] = errCount
-        
+
         results =
-          queues: queues          
+          queues: queues
           counts: counts
           starts: starts
           errors: errors
@@ -107,23 +107,23 @@ class CoffeeQOverlord
           startTimes: startTimes
           runningFor: runningFor
           throughputVals: throughputVals
-        
-        callback(results)              
-    )          
-  
+
+        callback(results)
+    )
+
   errorsForQueue: (queue, callback) ->
     Ctrl.run(
       (ctrl) =>
         @queueClient.llen @errorKeyForQueue(queue), ctrl.collect()
-      
+
       (ctrl) =>
         errCount = ctrl.result[1]
         @queueClient.lrange @errorKeyForQueue(queue), 0, errCount, ctrl.collect()
-      
+
       (ctrl) =>
         callback(ctrl.result[1])
-    )          
-  
+    )
+
   ###
     ACTION
     * TODO: Expose via web interface
@@ -146,5 +146,5 @@ class CoffeeQOverlord
   clearErrorsForQueue: (queue, callback) ->
     console.log "Clear Error Queue for #{@errorKeyForQueue(queue)}"
     @clearQueue(@errorKeyForQueue(queue), callback)
-    
+
 module.exports = CoffeeQOverlord
