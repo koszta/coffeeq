@@ -51,3 +51,10 @@ task 'link', 'Link ', (options) ->
   runCommand 'npm link'
   invoke 'clean_js'
   console.log "Module linked"
+
+task 'test', 'Running tests', ->
+  invoke 'build_js'
+  test 'You need jasmine-node to run the tests', 'which', 'jasmine-node'
+  specs = spawn 'jasmine-node', ['--coffee', '--forceexit', 'spec/']
+  specs.stdout.pipe process.stdin
+  specs.stderr.pipe process.stderr
