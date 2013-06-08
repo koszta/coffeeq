@@ -25,6 +25,7 @@
     "socket.io": "0.8.7"
   },
   "scripts": {
+    "test": "cake test",
     "prepublish": "cake build_js"
   },
   "engines": {
