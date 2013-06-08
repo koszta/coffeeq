@@ -50,6 +50,8 @@ class CoffeeQWorker extends EventEmitter
     @connection_attempts = 0
     @queueNeedsRestart = false
     @pubsubNeedsRestart = false
+    @performing = false
+    @clearAfterPerformed = false
 
     # init the queue clients and subscribe to the queue channel
     @queueClient = redis.createClient @port, @host
@@ -155,12 +157,22 @@ class CoffeeQWorker extends EventEmitter
   returns nothing
   ###
   popAndRun: (queue) ->
+    if @performing
+      console.log 'message arrived while processing'
+      @clearAfterPerformed = true
+      return
+    @performing = true
     @queueClient.lpop queue, (err, resp) =>
       if !err && resp
         job = JSON.parse(resp.toString())
         # TODO: perform task
         try
-          @perform job
+          @perform job, =>
+            @performing = false
+            if @clearAfterPerformed
+              console.log 'clearing queue after processing'
+              @clearAfterPerformed = false
+              @clearQueue queue
         catch e
           console.log("CATCHING EXCEPTION #{e}")
           @recordFailure(e, job)
@@ -170,7 +182,7 @@ class CoffeeQWorker extends EventEmitter
   job - The parsed Job object that is being run.
   Returns nothing.
   ###
-  perform: (job) ->
+  perform: (job, callback) ->
     old_title = process.title
     @emit 'job', @, @queue, job
 
@@ -183,6 +195,7 @@ class CoffeeQWorker extends EventEmitter
             @succeed result, job
         finally
           console.log "done performing"
+          callback result, job
     else
       @fail new Error("Missing Job: #{job.class}"), job
 

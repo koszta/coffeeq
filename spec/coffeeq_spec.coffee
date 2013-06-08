@@ -1,14 +1,14 @@
 redis = require 'redis'
 CoffeeQ = require '../lib/coffeeq'
 Worker = CoffeeQ.Worker
+redisClient = redis.createClient 6379, 'localhost'
 
 describe 'A CoffeeQ client', ->
   client = null
-  redisClient = null
 
-  beforeEach ->
+  beforeEach (done) ->
     client = new CoffeeQ()
-    redisClient = redis.createClient 6379, 'localhost'
+    redisClient.flushall done
 
   it 'checks that the coffeeq has a connection to redis', ->
     expect(client.queueClient).not.toBeNull()
@@ -74,9 +74,8 @@ describe 'A CoffeeQ client', ->
 
 
 describe 'A CoffeeQ Worker', ->
-  worker = null
   client = null
-  redisClient = null
+  worker = null
 
   jobs =
     succeed: (callback) ->
@@ -91,12 +90,21 @@ describe 'A CoffeeQ Worker', ->
     causeAnError: (a, callback) ->
       console.log "Running causeAnError #{a}"
       throw 'Exception in the wing wang!'
+    waitForever: ->
+      # no callback
+    oneSec: (callback) ->
+      setTimeout ->
+        callback()
+      , 1000
 
   # init the worker state for each test
-  beforeEach ->
-    redisClient = redis.createClient 6379, 'localhost'
+  beforeEach (done) ->
     client = new CoffeeQ()
     worker = new Worker 'testing', jobs
+    redisClient.flushall done
+
+  afterEach ->
+    worker.stop()
 
     # worker.on 'message', (worker, queue) ->
     #   console.log 'message fired'
@@ -115,3 +123,45 @@ describe 'A CoffeeQ Worker', ->
     worker.on 'success', ->
       done()
     client.enqueue 'testing', 'succeed', []
+
+  it 'should not process several jobs at once', (done) ->
+    jobCount = 0
+    worker.on 'success', ->
+      done new Error 'this should not be called'
+    worker.on 'job', ->
+      jobCount++
+      if jobCount > 1
+        done new Error 'this should be called only once'
+      else
+        done()
+    client.enqueue 'testing', 'waitForever', []
+    client.enqueue 'testing', 'waitForever', []
+
+  it 'should continue processing the second job', (done) ->
+    successCount = 0
+    worker.on 'success', ->
+      successCount++
+      done() if successCount == 2
+    client.enqueue 'testing', 'oneSec', []
+    client.enqueue 'testing', 'succeed', []
+
+  describe 'with another worker', ->
+    worker2 = null
+
+    beforeEach ->
+      worker2 = new Worker 'testing', jobs
+
+    afterEach ->
+      worker2.stop()
+
+    it 'should spread the jobs', (done) ->
+      workerDone = false
+      worker2Done = false
+      worker.on 'success', ->
+        workerDone = true
+        done() if workerDone && worker2Done
+      worker2.on 'success', ->
+        worker2Done = true
+        done() if workerDone && worker2Done
+      client.enqueue 'testing', 'oneSec', []
+      client.enqueue 'testing', 'oneSec', []
