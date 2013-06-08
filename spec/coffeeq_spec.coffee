@@ -1,5 +1,5 @@
-redis = require('redis')
-CoffeeQ = require('../lib/coffeeq')
+redis = require 'redis'
+CoffeeQ = require '../lib/coffeeq'
 Worker = CoffeeQ.Worker
 
 describe "A CoffeeQ client", ->
@@ -29,7 +29,7 @@ describe "A CoffeeQ client", ->
         result = length
 
     waitsFor (-> check), "Redis operations didn't completed", 500
-    runs -> expect(result).toEqual(1)
+    runs -> expect(result).toEqual 1
 
   it "adds multiple items to the queue and verifies the correct number have been added", ->
     result = -1
@@ -50,7 +50,7 @@ describe "A CoffeeQ client", ->
         result = length
 
     waitsFor (-> check), "Redis operations didn't completed", 500
-    runs -> expect(result).toEqual(5)
+    runs -> expect(result).toEqual 5
 
   it "adds an item to the queue and verifies the correct item was added", ->
     result = -1
@@ -68,9 +68,9 @@ describe "A CoffeeQ client", ->
 
     waitsFor (-> check), "Redis operations didn't completed", 500
     runs ->
-      resultObj = JSON.parse(result)
-      expect(resultObj.class).toEqual("multiply")
-      expect(resultObj.args).toEqual([7,4])
+      resultObj = JSON.parse result
+      expect(resultObj.class).toEqual "multiply"
+      expect(resultObj.args).toEqual [7,4]
 
 
 describe "A CoffeeQ Worker", ->
@@ -87,7 +87,7 @@ describe "A CoffeeQ Worker", ->
       console.log "callback fail"
       callback()
     multiply: (args...) ->
-      callback(a * b)
+      callback a * b
     causeAnError: (a, callback) ->
       console.log "Running causeAnError #{a}"
       throw "Exception in the wing wang!"
@@ -96,16 +96,16 @@ describe "A CoffeeQ Worker", ->
   beforeEach ->
     redisClient = redis.createClient 6379, 'localhost'
     client = new CoffeeQ()
-    worker = new Worker("testing", jobs)
+    worker = new Worker "testing", jobs
 
     # worker.on 'message', (worker, queue) ->
-    #   console.log("message fired")
+    #   console.log "message fired"
     # worker.on 'job', (worker, queue) ->
-    #   console.log("job fired")
+    #   console.log "job fired"
     # worker.on 'error', (worker, queue) ->
-    #   console.log("error fired")
+    #   console.log "error fired"
     # worker.on 'success', (worker, queue, job, result) ->
-    #   console.log("success fired with result #{result}")
+    #   console.log "success fired with result #{result}"
 
   it "checks that the worker has a connection to redis", ->
     expect(worker.queueClient).not.toBeNull()
