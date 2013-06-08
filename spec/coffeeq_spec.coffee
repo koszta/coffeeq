@@ -111,4 +111,7 @@ describe 'A CoffeeQ Worker', ->
     expect(worker.queueClient).not.toBeNull()
     expect(worker.pubsubClient).not.toBeNull()
 
-  it 'should process an item when one is added', ->
+  it 'should process an item when one is added', (done) ->
+    worker.on 'success', ->
+      done()
+    client.enqueue 'testing', 'succeed', []
