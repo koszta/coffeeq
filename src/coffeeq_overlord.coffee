@@ -39,7 +39,9 @@ class CoffeeQOverlord
   constructor: (options={}) ->
     @port = options.port || 6379
     @host = options.host || 'localhost'
+    @password = options.password
     @queueClient = redis.createClient @port, @host
+    @queueClient.auth @password if @password?
 
   # The include call must come after the constructor
   helper.include(this)

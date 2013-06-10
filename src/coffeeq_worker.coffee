@@ -44,6 +44,7 @@ class CoffeeQWorker extends EventEmitter
     options = {} unless options
     @port = options.port || 6379
     @host = options.host || 'localhost'
+    @password = options.password
     @queue = queue
     @queue_key = @key('queue', queue)
     @callbacks = callbacks or {}
@@ -55,10 +56,12 @@ class CoffeeQWorker extends EventEmitter
 
     # init the queue clients and subscribe to the queue channel
     @queueClient = redis.createClient @port, @host
+    @queueClient.auth @password if @password?
     @queueClient.on("error", @redisConnectionError)
     @queueClient.on("connect", @redisQueueConnect)
 
     @pubsubClient = redis.createClient @port, @host
+    @pubsubClient.auth @password if @password?
     @pubsubClient.on("error", @redisConnectionError)
     @pubsubClient.on("connect", @redisPubsubConnect)
 
