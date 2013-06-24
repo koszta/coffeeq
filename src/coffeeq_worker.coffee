@@ -140,6 +140,8 @@ class CoffeeQWorker extends EventEmitter
 
   # Registers to handle messages for pubsub
   registerMessageHandlers: (channel) ->
+    @pubsubClient.removeAllListeners 'message'
+    @pubsubClient.removeAllListeners 'subscribe'
     @pubsubClient.on "message", (channel, message) =>
       @emit 'message', @, channel, message
       @popAndRun channel if message == "queued"
